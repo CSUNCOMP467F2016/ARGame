@@ -244,3 +244,109 @@ public sealed class DetectAndSimulate : MonoBehaviour
 
         InitBlobDetector();
     }
+
+void InitBlobDetector ()
+    {
+
+        // Try to create the blob detector.
+        blobDetector = FeatureDetector.create(
+                FeatureDetector.SIMPLEBLOB);
+        if (blobDetector == null)
+        {
+            Debug.LogError(
+                    "Unable to create blob detector");
+            Destroy(this);
+            return;
+        }
+
+        // The blob detector parameters must be put inta a yaml file for unity
+        string blobDetectorParams = @"%YAML:1.0
+thresholdStep: 10.0
+minThreshold: 50.0
+maxThreshold: 220.0
+minRepeatability: 2
+minDistBetweenBlobs: 10.0
+filterByColor: False
+blobColor: 0
+filterByArea: True
+minArea: 50.0
+maxArea: 5000.0
+filterByCircularity: True
+minCircularity: 0.8
+maxCircularity: 3.4028234663852886e+38
+filterByInertia: False
+minInertiaRatio: 0.1
+maxInertiaRatio: 3.4028234663852886e+38
+filterByConvexity: False
+minConvexity: 0.95
+maxConvexity: 3.4028234663852886e+38
+";
+
+        // Try to write the blob detector's parameters
+        // to a temporary file.
+        string path = Application.persistentDataPath +
+                      "/blobDetectorParams.yaml";
+        File.WriteAllText(path, blobDetectorParams);
+        if (!File.Exists(path))
+        {
+            Debug.LogError(
+                    "Unable to write blob " +
+                    "detector's parameters to " +
+                    path);
+            Destroy(this);
+            return;
+        }
+
+        // Read the blob detector's parameters from the
+        // temporary file.
+        blobDetector.read(path);
+
+        // Delete the temporary file.
+        File.Delete(path);
+    }
+
+    void Update ()
+    {
+
+        if (rgbaMat == null)
+        {
+            // Initialization is not yet complete.
+            return;
+        }
+
+        if (gyro != null)
+        {
+            //get games gravity and and convert it into real world gravity
+            Vector3 gravity = gyro.gravity;
+            gravity.z = 0f;
+            gravity = gravityMagnitude *
+                      gravity.normalized;
+            Physics.gravity = gravity;
+        }
+
+        if (!webCamTexture.didUpdateThisFrame)
+        {
+            // No new frame is ready.
+            return;
+        }
+
+        if (simulating)
+        {
+            // No new detection results are needed.
+            return;
+        }
+
+        // Convert the RGBA image to open cv format
+        Utils.webCamTextureToMat(webCamTexture,
+                                 rgbaMat, colors);
+
+        // Convert the OpenCV image to gray scale
+        Imgproc.cvtColor(rgbaMat, grayMat,
+                         Imgproc.COLOR_RGBA2GRAY);
+        Imgproc.Canny(grayMat, cannyMat, 50.0, 200.0);
+        Imgproc.equalizeHist(grayMat, grayMat);
+
+        UpdateCircles();
+        UpdateLines();
+    }
+
