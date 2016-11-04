@@ -113,4 +113,60 @@ public sealed class DetectAndSimulate : MonoBehaviour
         }
     }
 
- 
+ void Start ()
+    {
+
+        // Cache the reference to the game world's
+        // camera.
+        _camera = GetComponent<Camera>();
+
+        //sets gravity for game based on phones own gravity scale
+        gyro = Input.gyro;
+        gravityMagnitude = Physics.gravity.magnitude *
+                           gravityScale;
+
+        // Try to find a (physical) camera that faces
+        // the required direction.
+        WebCamDevice[] devices = WebCamTexture.devices;
+        int numDevices = devices.Length;
+        for (int i = 0; i < numDevices; i++)
+        {
+            WebCamDevice device = devices[i];
+            if (device.isFrontFacing ==
+                        useFrontFacingCamera)
+            {
+                string name = device.name;
+                Debug.Log("Selecting camera with " +
+                          "index " + i + " and name " +
+                          name);
+                webCamTexture = new WebCamTexture(
+                        name, preferredCaptureWidth,
+                        preferredCaptureHeight,
+                        preferredFPS);
+                break;
+            }
+        }
+
+        if (webCamTexture == null)
+        {
+            // No camera faces the required direction.
+            // Give up.
+            Debug.LogError("No suitable camera found");
+            Destroy(this);
+            return;
+        }
+
+        // Ask the camera to start capturing.
+        webCamTexture.Play();
+
+        if (gyro != null)
+        {
+            gyro.enabled = true;
+        }
+
+        // Wait for the camera to start capturing.
+        // Then, initialize everything else.
+        StartCoroutine(Init());
+    }
+
+  
