@@ -471,3 +471,87 @@ void UpdateCircles ()
             DrawPreview();
         }
     }
+
+        void DrawPreview ()
+    {
+
+        // Draw red markers for scanned shapes
+
+        int numCircles = circles.Count;
+        int numLines = lines.Count;
+        if (numCircles < 1 && numLines < 1)
+        {
+            return;
+        }
+
+        GL.PushMatrix();
+        if (drawPreviewMaterial != null)
+        {
+            drawPreviewMaterial.SetPass(0);
+        }
+        GL.LoadPixelMatrix();
+
+        if (numCircles > 0)
+        {
+            // Draw the circles.
+            //iterate through scanned circles and place red marker with openGL
+            GL.Begin(GL.QUADS);
+            for (int i = 0; i < numCircles; i++)
+            {
+                Circle circle = circles[i];
+                float centerX =
+                        circle.screenPosition.x;
+                float centerY =
+                        circle.screenPosition.y;
+                float radius =
+                        0.5f * circle.screenDiameter;
+                float minX = centerX - radius;
+                float maxX = centerX + radius;
+                float minY = centerY - radius;
+                float maxY = centerY + radius;
+                GL.Vertex3(minX, minY, 0f);
+                GL.Vertex3(minX, maxY, 0f);
+                GL.Vertex3(maxX, maxY, 0f);
+                GL.Vertex3(maxX, minY, 0f);
+            }
+            GL.End();
+        }
+
+        if (numLines > 0)
+        {
+            // Draw the lines.
+            //iterate through scanned lines and place red marker with openGL
+            GL.Begin(GL.LINES);
+            for (int i = 0; i < numLines; i++)
+            {
+                Line line = lines[i];
+                GL.Vertex(line.screenPoint0);
+                GL.Vertex(line.screenPoint1);
+            }
+            GL.End();
+        }
+
+        GL.PopMatrix();
+    }
+
+    void OnGUI ()
+    {
+        //button thats present when simulated game beings
+        GUI.skin.button.fontSize = buttonFontSize;
+        if (simulating)
+        {
+            if (GUI.Button(buttonRect,
+                           "Stop Simulation"))
+            {
+                StopSimulation();
+            }
+        }
+        else {
+            //button thats present when camera is active
+            if (GUI.Button(buttonRect,
+                           "Start Simulation"))
+            {
+                StartSimulation();
+            }
+        }
+    }
