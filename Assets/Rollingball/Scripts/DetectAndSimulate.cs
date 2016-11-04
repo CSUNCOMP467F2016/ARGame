@@ -350,3 +350,124 @@ maxConvexity: 3.4028234663852886e+38
         UpdateLines();
     }
 
+void UpdateCircles ()
+    {
+
+        // Detect blobs.
+        blobDetector.detect(grayMat, blobs);
+
+   
+        // Calculate the circles' screen coordinates
+        // and world coordinates.
+
+        // Clear the previous coordinates.
+        circles.Clear();
+
+        // Iterate over the blobs.
+        KeyPoint[] blobsArray = blobs.toArray();
+        int numBlobs = blobsArray.Length;
+        for (int i = 0; i < numBlobs; i++)
+        {
+
+            // Convert blobs' image coordinates to
+            // screen coordinates.
+            KeyPoint blob = blobsArray[i];
+            Point imagePoint = blob.pt;
+            Vector2 screenPosition =
+                    ConvertToScreenPosition(
+                            (float) imagePoint.x,
+                            (float) imagePoint.y);
+            float screenDiameter =
+                    blob.size *
+                    screenPixelsPerImagePixel;
+
+            // Convert screen coordinates to world
+            // coordinates based on raycasting.
+            Vector3 worldPosition =
+                    ConvertToWorldPosition(
+                            screenPosition);
+
+            Circle circle = new Circle(
+                    screenPosition, screenDiameter,
+                    worldPosition);
+            circles.Add(circle);
+        }
+    }
+
+    void UpdateLines ()
+    {
+
+        // Detect lines.
+        Imgproc.HoughLinesP(cannyMat, houghLines, 1.0,
+                            Mathf.PI / 180.0, 50,
+                            50.0, 10.0);
+
+        //
+        // Calculate the lines' screen coordinates and
+        // world coordinates.
+        //
+
+        // Clear the previous coordinates.
+        lines.Clear();
+
+        // Iterate over the lines.
+        int numHoughLines = houghLines.cols() *
+                            houghLines.rows() *
+                            houghLines.channels();
+        int[] houghLinesArray = new int[numHoughLines];
+        houghLines.get(0, 0, houghLinesArray);
+        for (int i = 0; i < numHoughLines; i += 4)
+        {
+
+            // Convert lines' image coordinates to  screen coordinates.
+            Vector2 screenPoint0 =
+                    ConvertToScreenPosition(
+                            houghLinesArray[i],
+                            houghLinesArray[i + 1]);
+            Vector2 screenPoint1 =
+                    ConvertToScreenPosition(
+                            houghLinesArray[i + 2],
+                            houghLinesArray[i + 3]);
+
+            // Convert screen coordinates to world
+            // coordinates based on raycasting.
+            Vector3 worldPoint0 =
+                    ConvertToWorldPosition(
+                            screenPoint0);
+            Vector3 worldPoint1 =
+                    ConvertToWorldPosition(
+                            screenPoint1);
+
+            Line line = new Line(
+                    screenPoint0, screenPoint1,
+                    worldPoint0, worldPoint1);
+            lines.Add(line);
+        }
+    }
+
+    Vector2 ConvertToScreenPosition ( float imageX,
+                                    float imageY )
+    {
+        float screenX = screenWidth - imageY *
+                        screenPixelsPerImagePixel;
+        float screenY = screenHeight - imageX *
+                        screenPixelsPerImagePixel -
+                        screenPixelsYOffset;
+        return new Vector2(screenX, screenY);
+    }
+
+    Vector3 ConvertToWorldPosition (
+            Vector2 screenPosition )
+    {
+        Ray ray = _camera.ScreenPointToRay(
+                screenPosition);
+        return ray.GetPoint(raycastDistance);
+    }
+
+    void OnPostRender ()
+    {
+        if (!simulating)
+        {
+            DrawPreview();
+        }
+    }
