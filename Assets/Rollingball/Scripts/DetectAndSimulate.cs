@@ -555,3 +555,93 @@ void UpdateCircles ()
             }
         }
     }
+
+
+    void StartSimulation ()
+    {
+
+        // Freeze the video background
+        webCamTexture.Pause();
+
+        // Create the circles' representation in the
+        // physics simulation.
+        //iterate through the scanned circles and instanitate prefabs into given coordinates
+        int numCircles = circles.Count;
+        for (int i = 0; i < numCircles; i++)
+        {
+            Circle circle = circles[i];
+            GameObject simulatedCircle =
+                    (GameObject) Instantiate(
+                            simulatedCirclePrefab);
+            Transform simulatedCircleTransform =
+                    simulatedCircle.transform;
+            simulatedCircleTransform.position =
+                    circle.worldPosition;
+            simulatedCircleTransform.localScale =
+                    circle.screenDiameter *
+                    Vector3.one;
+            simulatedObjects.Add(simulatedCircle);
+        }
+
+        // Create the lines' representation in the
+        // physics simulation.
+        //iterate through the scanned circles and instanitate prefabs into given coordinates
+        int numLines = lines.Count;
+        for (int i = 0; i < numLines; i++)
+        {
+            Line line = lines[i];
+            GameObject simulatedLine =
+                    (GameObject) Instantiate(
+                            simulatedLinePrefab);
+            Transform simulatedLineTransform =
+                    simulatedLine.transform;
+            float angle = -Vector2.Angle(
+                    Vector2.right, line.screenPoint1 -
+                            line.screenPoint0);
+            Vector3 worldPoint0 = line.worldPoint0;
+            Vector3 worldPoint1 = line.worldPoint1;
+            simulatedLineTransform.position =
+                    0.5f * (worldPoint0 + worldPoint1);
+            simulatedLineTransform.eulerAngles =
+                    new Vector3(0f, 0f, angle);
+            simulatedLineTransform.localScale =
+                    new Vector3(
+                            Vector3.Distance(
+                                    worldPoint0,
+                                    worldPoint1),
+                            lineThickness,
+                            lineThickness);
+            simulatedObjects.Add(simulatedLine);
+        }
+    }
+
+    void StopSimulation ()
+    {
+
+        // Unfreeze the video background.
+        webCamTexture.Play();
+
+        // Destroy all objects in the physics simulation.
+        int numSimulatedObjects =
+                simulatedObjects.Count;
+        for (int i = 0; i < numSimulatedObjects; i++)
+        {
+            GameObject simulatedObject =
+                    simulatedObjects[i];
+            Destroy(simulatedObject);
+        }
+        simulatedObjects.Clear();
+    }
+
+    void OnDestroy ()
+    {
+        if (webCamTexture != null)
+        {
+            webCamTexture.Stop();
+        }
+        if (gyro != null)
+        {
+            gyro.enabled = false;
+        }
+    }
+}
