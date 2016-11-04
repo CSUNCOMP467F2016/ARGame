@@ -169,4 +169,78 @@ public sealed class DetectAndSimulate : MonoBehaviour
         StartCoroutine(Init());
     }
 
-  
+   IEnumerator Init ()
+    {
+
+        // Wait for the camera to start capturing.
+        while (!webCamTexture.didUpdateThisFrame)
+        {
+            yield return null;
+        }
+
+        //set parameters for max width and height of capture
+        int captureWidth = webCamTexture.width;
+        int captureHeight = webCamTexture.height;
+
+        //set parameter for diagnol for improved quality
+        float captureDiagonal = Mathf.Sqrt(
+                captureWidth * captureWidth +
+                captureHeight * captureHeight);
+        Debug.Log("Started capturing frames at " +
+                  captureWidth + "x" + captureHeight);
+
+        colors = new Color32[
+                captureWidth * captureHeight];
+
+        //materials that will be used to help detect shapes
+        rgbaMat = new Mat(captureHeight, captureWidth,
+                          CvType.CV_8UC4);
+        grayMat = new Mat(captureHeight, captureWidth,
+                          CvType.CV_8UC1);
+
+        //canny material aids in edge filtering
+        cannyMat = new Mat(captureHeight, captureWidth,
+                           CvType.CV_8UC1);
+
+        transform.localPosition =
+                new Vector3(0f, 0f, -captureWidth);
+        _camera.nearClipPlane = 1;
+        _camera.farClipPlane = captureWidth + 1;
+        _camera.orthographicSize =
+                0.5f * captureDiagonal;
+        raycastDistance = 0.5f * captureWidth;
+
+        Transform videoRendererTransform =
+                videoRenderer.transform;
+        videoRendererTransform.localPosition =
+                new Vector3(captureWidth / 2,
+                            -captureHeight / 2, 0f);
+        videoRendererTransform.localScale =
+                new Vector3(captureWidth,
+                            captureHeight, 1f);
+
+        videoRenderer.material.mainTexture =
+                webCamTexture;
+
+        // Calculate the conversion factors between
+        // image and screen coordinates.
+        screenWidth = (float) Screen.width;
+        screenHeight = (float) Screen.height;
+        screenPixelsPerImagePixel =
+                screenWidth / captureHeight;
+        screenPixelsYOffset =
+                0.5f * (screenHeight - (screenWidth *
+                captureWidth / captureHeight));
+
+        //set arbritary line thickness for scanned lines
+        lineThickness = 0.01f * screenWidth;
+
+        //button for displayed in game
+        buttonRect = new UnityEngine.Rect(
+                0.4f * screenWidth,
+                0.75f * screenHeight,
+                0.2f * screenWidth,
+                0.1f * screenHeight);
+
+        InitBlobDetector();
+    }
